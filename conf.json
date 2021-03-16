@@ -1,0 +1,80 @@
+{
+    "ledBoard": {
+        "port": "COM5",
+        "baud": 115200,
+        "keys": 8
+    },
+    "buttons": {
+        "1": {
+            "cmd": "cscript //nologo C:\\Users\\mrsag\\ledboard\\scripts\\toggle_zoom_audio.js",
+            "type": "toggleIfCmd",
+            "toggle":{
+                "init": true
+            },
+            "ledCmd": {
+                "cmd": "C:\\Users\\mrsag\\ledboard\\scripts\\check_zoom.bat",
+                "sec": 1
+
+            }
+        },
+        "2": {
+            "cmd": "echo 'ok'",
+            "type": "cmd",
+            "ledCmd": {
+                "cmd": "C:\\Users\\mrsag\\ledboard\\scripts\\check_zoom.bat",
+                "sec": 1
+            }
+        },
+        "3": {
+            "cmd": "",
+            "type": "toggle",
+            "toggle": {
+                "init": false
+            }
+        },
+        "4": {
+            "cmd": "cscript //nologo C:\\Users\\mrsag\\ledboard\\scripts\\exit_zoom.js",
+            "type": "toggleIfCmd",
+            "toggle":{
+                "init": true
+            },
+            "ledCmd": {
+                "cmd": "C:\\Users\\mrsag\\ledboard\\scripts\\check_zoom.bat",
+                "sec": 1
+            }
+        },
+        "5": {
+            "cmd": "cscript //nologo C:\\Users\\mrsag\\ledboard\\scripts\\toggle_zoom_video.js",
+            "type": "toggleIfCmd",
+            "toggle":{
+                "init": true
+            },
+            "ledCmd": {
+                "cmd": "C:\\Users\\mrsag\\ledboard\\scripts\\check_zoom.bat",
+                "sec": 1
+
+            }
+        },
+        "6": {
+            "cmd": "",
+            "type": "toggle",
+            "toggle": {
+                "init": false
+            }
+        },
+        "7": {
+            "cmd": "",
+            "type": "toggle",
+            "toggle": {
+                "init": false
+            }
+        },
+        "8": {
+            "cmd": "",
+            "type": "toggle",
+            "toggle": {
+                "init": false
+            }
+        }
+    }
+}
