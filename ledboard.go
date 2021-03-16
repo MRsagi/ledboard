@@ -75,7 +75,7 @@ func (conf *UserConfig) run() {
 	var btn uint8
 	for {
 		btn = <-readCh
-		fmt.Printf("Pushed: %v ", btn)
+		fmt.Printf("Pushed:%v\n", btn)
 		ch, ok := activeChans[uint8(btn)]
 		if !ok {
 			fmt.Printf("Error activating %v\n", btn)

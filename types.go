@@ -96,19 +96,23 @@ func (cc *LedCmdConfig) Run(writeCh chan uint8, activate chan bool, buttonName u
 	runArgs := strings.Split(cmd, " ")
 	toggleArgs := strings.Split(cc.Cmd, " ")
 	var okCh = make(chan bool, 1)
-	go checkCommand(okCh, toggleArgs[0], toggleArgs[1:])
+	waitingForCmd := true
 	waitTime := time.Tick(time.Duration(cc.Sec) * time.Second)
+	go checkCommand(okCh, toggleArgs[0], toggleArgs[1:])
 	for {
-		select {
-		case <-waitTime:
-			go checkCommand(okCh, toggleArgs[0], toggleArgs[1:])
-		default:
+		if !waitingForCmd {
+			select {
+			case <-waitTime:
+				go checkCommand(okCh, toggleArgs[0], toggleArgs[1:])
+			default:
+			}
 		}
 		select {
 		case <-activate:
 			err := exec.Command(runArgs[0], runArgs[1:]...).Run()
 			checkError(err)
 		case ok := <-okCh:
+			waitingForCmd = false
 			fmt.Printf("Btn:%v cmd:%v\n", buttonName, ok)
 			switch {
 			case !ok && cc.state == true:
@@ -151,13 +155,16 @@ func (tic *LedToggleIfCmdConfig) Run(writeCh chan uint8, activate chan bool, but
 	toggleArgs := strings.Split(tic.Cmd, " ")
 	okCh := make(chan bool, 1)
 	prevCmdOk := false
-	go checkCommand(okCh, toggleArgs[0], toggleArgs[1:])
+	waitingForCmd := true
 	waitTime := time.Tick(time.Duration(tic.Sec) * time.Second)
+	go checkCommand(okCh, toggleArgs[0], toggleArgs[1:])
 	for {
-		select {
-		case <-waitTime:
-			go checkCommand(okCh, toggleArgs[0], toggleArgs[1:])
-		default:
+		if !waitingForCmd {
+			select {
+			case <-waitTime:
+				go checkCommand(okCh, toggleArgs[0], toggleArgs[1:])
+			default:
+			}
 		}
 		select {
 		case <-activate:
@@ -168,6 +175,7 @@ func (tic *LedToggleIfCmdConfig) Run(writeCh chan uint8, activate chan bool, but
 				tic.state = !tic.state
 			}
 		case ok := <-okCh:
+			waitingForCmd = false
 			fmt.Printf("Btn:%v cmd:%v\n", buttonName, ok)
 			switch {
 			case ok && prevCmdOk == false && tic.InitOn:
