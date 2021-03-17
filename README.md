@@ -126,7 +126,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [contributors-shield]: https://img.shields.io/github/contributors/MRsagi/ledboard.svg?style=for-the-badge
 [contributors-url]: https://github.com/MRsagi/ledboard/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/MRsagi/ledboard?style=for-the-badgee
+[forks-shield]: https://img.shields.io/github/forks/MRsagi/ledboard?style=for-the-badge
 [forks-url]: https://github.com/MRsagi/ledboard/network/members
 [stars-shield]: https://img.shields.io/github/stars/MRsagi/ledboard.svg?style=for-the-badge
 [stars-url]: https://github.com/MRsagi/ledboard/stargazers
