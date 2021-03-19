@@ -3,6 +3,7 @@ static const uint8_t num_buttons = 8;
 static const uint8_t btn_leds[] = {2,3,4,5,6,7,8,9};
 static const uint8_t num_leds = 8;
 static bool block[] = {false,false,false,false,false,false,false,false};
+int incomingInt; 
 
 void setup() {
   Serial.begin(115200);
@@ -44,12 +45,21 @@ void setup() {
 void loop() {
   //check incoming command to leds
   if (Serial.available() > 0){
-     int incomingInt = Serial.parseInt();
+     incomingInt = Serial.parseInt();
      //as 0 is error, buttons numbering starts at 1
      if (1 <= incomingInt <= num_leds){ 
       //toggle led state
-      digitalWrite(btn_leds[incomingInt-1], !digitalRead(btn_leds[incomingInt-1]));
-     }
+      String state = Serial.readString();
+      if (state == "H") {
+        digitalWrite(btn_leds[incomingInt-1],HIGH );
+      } 
+      else if (state == "L") {
+        digitalWrite(btn_leds[incomingInt-1],LOW );
+      } 
+      else {
+        digitalWrite(btn_leds[incomingInt-1],!digitalRead(btn_leds[incomingInt-1]));
+      }
+    }
   }
   //check buttons state
   for (int i = 0; i < num_buttons; i++) {
