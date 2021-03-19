@@ -1,8 +1,7 @@
 {
     "ledBoard": {
         "port": "COM5",
-        "baud": 115200,
-        "keys": 8
+        "baud": 115200
     },
     "buttons": {
         "1": {
@@ -18,7 +17,7 @@
             }
         },
         "2": {
-            "cmd": "echo 'ok'",
+            "cmd": "cmd /C echo OK",
             "type": "cmd",
             "ledCmd": {
                 "cmd": "C:\\Users\\mrsag\\ledboard\\scripts\\check_zoom.bat",
@@ -26,10 +25,10 @@
             }
         },
         "3": {
-            "cmd": "",
+            "cmd": "cmd /C",
             "type": "toggle",
             "toggle": {
-                "init": false
+                "init": true
             }
         },
         "4": {
@@ -56,21 +55,21 @@
             }
         },
         "6": {
-            "cmd": "",
+            "cmd": "cmd /C",
             "type": "toggle",
             "toggle": {
-                "init": false
+                "init": true
             }
         },
         "7": {
-            "cmd": "",
+            "cmd": "cmd /C",
             "type": "toggle",
             "toggle": {
-                "init": false
+                "init": true
             }
         },
         "8": {
-            "cmd": "",
+            "cmd": "cmd /C",
             "type": "toggle",
             "toggle": {
                 "init": false

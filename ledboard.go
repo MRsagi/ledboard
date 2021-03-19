@@ -6,73 +6,45 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/jacobsa/go-serial/serial"
+	"github.com/ledboard/pkg/bus"
+	e "github.com/ledboard/pkg/errors"
+	"github.com/ledboard/pkg/types"
 )
 
 const defaultConfig = "conf.json"
 
 func main() {
 	conf := newConfig(defaultConfig)
-	conf.LedBoard.connect()
-	conf.run()
+	bus := bus.NewSerialBus(conf.LedBoard.Port, conf.LedBoard.Baud)
+	bus.Connect()
+	run(conf, bus)
 }
 
-func checkPanic(err error) {
-	if err != nil {
-		panic(err.Error())
-	}
-}
-func checkError(err error) {
-	if err != nil {
-		fmt.Printf("ERROR: %v\n", err.Error())
-	}
-}
-func newConfig(filename string) UserConfig {
+func newConfig(filename string) types.UserConfig {
 	file, err := ioutil.ReadFile(filename)
-	checkPanic(err)
-	var conf UserConfig
+	e.CheckPanic(err)
+	var conf types.UserConfig
 	err = json.Unmarshal(file, &conf)
-	checkPanic(err)
+	e.CheckPanic(err)
 	fmt.Printf("%v\n", conf)
 	return conf
 }
 
-func (lbConf *LedBoardConfig) connect() {
-	options := serial.OpenOptions{
-		PortName: lbConf.Port,
-		BaudRate: lbConf.Baud,
-		DataBits: 8,
-	}
-	port, err := serial.Open(options)
-	checkPanic(err)
-	buf := make([]byte, 1)
-	_, err = port.Read(buf)
-	checkPanic(err)
-	if string(buf[0]) != "s" {
-		panic("error reading from ledboard")
-	}
-	_, err = port.Write([]byte{0})
-	checkPanic(err)
-	time.Sleep(time.Second)
-	fmt.Println("connection successful")
-	lbConf.serial = serialBus{bus: port}
-}
-func (conf *UserConfig) run() {
+func run(conf types.UserConfig, serialBus bus.SerialBus) {
 	var activeChans = make(map[uint8]chan bool)
-	var readCh = make(chan uint8, 256)
-	var writeCh = make(chan uint8, 256)
+
 	//setup
 	for i, button := range conf.Buttons {
 		fmt.Printf("Init button:%v ", i)
-		button.initCallback()
+		button.InitCallback()
 		activeChans[i] = make(chan bool, 1)
-		go button.callback.Run(writeCh, activeChans[i], i, button.Cmd)
-		time.Sleep(250 * time.Millisecond)
+		go button.Run(serialBus.GetWriteChannel(), activeChans[i], i, button.Cmd)
+		time.Sleep(50 * time.Millisecond)
 	}
-	go conf.LedBoard.serial.RunRead(readCh)
-	go conf.LedBoard.serial.RunWrite(writeCh)
+
 	//loop
 	var btn uint8
+	readCh := serialBus.GetReadChannel()
 	for {
 		btn = <-readCh
 		fmt.Printf("Pushed:%v\n", btn)

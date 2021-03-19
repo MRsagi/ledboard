@@ -1,17 +1,17 @@
-package main
+package types
 
 import (
 	"fmt"
-	"io"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/ledboard/pkg/bus"
+	e "github.com/ledboard/pkg/errors"
 )
 
-const asciiByteOffset = 48
-
 type ButtonActiveConfig interface {
-	Run(chan uint8, chan bool, uint8, string)
+	Run(chan bus.LedLight, chan bool, uint8, string)
 }
 
 type UserConfig struct {
@@ -23,32 +23,7 @@ type LedBoardConfig struct {
 	Port   string `json:"port"`
 	Baud   uint   `json:"baud"`
 	Keys   int    `json:"keys"`
-	serial serialBus
-}
-
-type serialBus struct {
-	bus io.ReadWriteCloser
-}
-
-func (s *serialBus) RunRead(readCh chan uint8) uint8 {
-	for {
-		buf := make([]byte, 1)
-		s.bus.Read(buf)
-		readCh <- buf[0]
-	}
-}
-
-func (s *serialBus) RunWrite(writeCh chan uint8) {
-	var b uint8
-	for {
-		b = <-writeCh
-		sendValue := b + asciiByteOffset
-		n, err := s.bus.Write([]byte{sendValue})
-		fmt.Printf("sent:%v, len:%v\n", sendValue, n)
-		if err != nil {
-			fmt.Printf("err:%v\n", err.Error())
-		}
-	}
+	serial bus.SerialBus
 }
 
 type ButtonConfig struct {
@@ -62,7 +37,11 @@ type ButtonConfig struct {
 	activeCh             chan bool
 }
 
-func (b *ButtonConfig) initCallback() {
+func (b *ButtonConfig) Run(writeCh chan bus.LedLight, activate chan bool, buttonName uint8, cmd string) {
+	b.callback.Run(writeCh, activate, buttonName, cmd)
+}
+
+func (b *ButtonConfig) InitCallback() {
 	fmt.Printf("type:%v ", b.LedType)
 	switch b.LedType {
 	case "toggle":
@@ -92,7 +71,7 @@ type LedCmdConfig struct {
 	state bool
 }
 
-func (cc *LedCmdConfig) Run(writeCh chan uint8, activate chan bool, buttonName uint8, cmd string) {
+func (cc *LedCmdConfig) Run(writeCh chan bus.LedLight, activate chan bool, buttonName uint8, cmd string) {
 	runArgs := strings.Split(cmd, " ")
 	toggleArgs := strings.Split(cc.Cmd, " ")
 	var okCh = make(chan bool, 1)
@@ -110,16 +89,16 @@ func (cc *LedCmdConfig) Run(writeCh chan uint8, activate chan bool, buttonName u
 		select {
 		case <-activate:
 			err := exec.Command(runArgs[0], runArgs[1:]...).Run()
-			checkError(err)
+			e.CheckError(err)
 		case ok := <-okCh:
 			waitingForCmd = false
 			fmt.Printf("Btn:%v cmd:%v\n", buttonName, ok)
 			switch {
 			case !ok && cc.state == true:
-				writeCh <- buttonName
+				writeCh <- bus.LedLight{buttonName, false}
 				cc.state = false
 			case ok && cc.state == false:
-				writeCh <- buttonName
+				writeCh <- bus.LedLight{buttonName, true}
 				cc.state = true
 			}
 		}
@@ -130,18 +109,18 @@ type LedToggleConfig struct {
 	InitOn bool `json:"init"`
 }
 
-func (tg *LedToggleConfig) Run(writeCh chan uint8, activate chan bool, buttonName uint8, cmd string) {
+func (tg *LedToggleConfig) Run(writeCh chan bus.LedLight, activate chan bool, buttonName uint8, cmd string) {
 	fmt.Printf("Running toggle go of: %v\n", buttonName)
-	if tg.InitOn {
-		writeCh <- buttonName
-	}
+	state := tg.InitOn
+	writeCh <- bus.LedLight{buttonName, state}
 	runArgs := strings.Split(cmd, " ")
 	for {
+		state = !state
 		<-activate
 		fmt.Printf("running cmd: %v ", cmd)
 		err := exec.Command(runArgs[0], runArgs[1:]...).Run()
-		checkError(err)
-		writeCh <- buttonName
+		e.CheckError(err)
+		writeCh <- bus.LedLight{buttonName, state}
 	}
 }
 
@@ -150,7 +129,7 @@ type LedToggleIfCmdConfig struct {
 	LedToggleConfig
 }
 
-func (tic *LedToggleIfCmdConfig) Run(writeCh chan uint8, activate chan bool, buttonName uint8, cmd string) {
+func (tic *LedToggleIfCmdConfig) Run(writeCh chan bus.LedLight, activate chan bool, buttonName uint8, cmd string) {
 	runArgs := strings.Split(cmd, " ")
 	toggleArgs := strings.Split(tic.Cmd, " ")
 	okCh := make(chan bool, 1)
@@ -169,28 +148,23 @@ func (tic *LedToggleIfCmdConfig) Run(writeCh chan uint8, activate chan bool, but
 		select {
 		case <-activate:
 			err := exec.Command(runArgs[0], runArgs[1:]...).Run()
-			checkError(err)
+			e.CheckError(err)
 			if prevCmdOk {
-				writeCh <- buttonName
+				writeCh <- bus.LedLight{buttonName, !tic.state}
 				tic.state = !tic.state
 			}
 		case ok := <-okCh:
 			waitingForCmd = false
 			fmt.Printf("Btn:%v cmd:%v\n", buttonName, ok)
 			switch {
-			case ok && prevCmdOk == false && tic.InitOn:
-				writeCh <- buttonName
-				tic.state = !tic.state
-				fallthrough
 			case ok && prevCmdOk == false:
+				writeCh <- bus.LedLight{buttonName, tic.InitOn}
+				tic.state = tic.InitOn
 				prevCmdOk = true
 			//always turn off when cmd false
-			case !ok && prevCmdOk == true && tic.state == true:
-				writeCh <- buttonName
-				tic.state = !tic.state
-				fallthrough
 			case !ok && prevCmdOk == true:
-				prevCmdOk = false
+				writeCh <- bus.LedLight{buttonName, false}
+				tic.state = false
 			}
 		}
 	}
