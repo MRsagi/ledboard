@@ -1,14 +1,18 @@
 package types
 
 import (
-	"fmt"
+	"encoding/json"
+	"io/ioutil"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/ledboard/pkg/bus"
 	e "github.com/ledboard/pkg/errors"
 )
+
+var globalLog *e.Logger
 
 type ButtonActiveConfig interface {
 	Run(chan bus.LedLight, chan bool, uint8, string)
@@ -17,6 +21,7 @@ type ButtonActiveConfig interface {
 type UserConfig struct {
 	LedBoard LedBoardConfig         `json:"ledBoard"`
 	Buttons  map[uint8]ButtonConfig `json:"buttons"`
+	Log      *e.Logger
 }
 
 type LedBoardConfig struct {
@@ -37,27 +42,38 @@ type ButtonConfig struct {
 	activeCh             chan bool
 }
 
+func NewConfig(filename string) UserConfig {
+	globalLog = e.NewLogger()
+	file, err := ioutil.ReadFile(filename)
+	globalLog.CheckPanic(err)
+	var conf UserConfig
+	err = json.Unmarshal(file, &conf)
+	globalLog.CheckPanic(err)
+	conf.Log = globalLog
+	conf.Log.Debugf("%v", conf)
+	return conf
+}
+
 func (b *ButtonConfig) Run(writeCh chan bus.LedLight, activate chan bool, buttonName uint8, cmd string) {
 	b.callback.Run(writeCh, activate, buttonName, cmd)
 }
 
 func (b *ButtonConfig) InitCallback() {
-	fmt.Printf("type:%v ", b.LedType)
 	switch b.LedType {
 	case "toggle":
-		fmt.Printf("init:%v\n", b.LedToggleConfig.InitOn)
+		globalLog.Infof("type:%v init:%v", b.LedType, b.LedToggleConfig.InitOn)
 		b.callback = &b.LedToggleConfig
 	case "cmd":
-		fmt.Printf("cmd:%v every[sec]:%v\n", b.LedCmdConfig.Cmd, b.LedCmdConfig.Sec)
+		globalLog.Infof("type:%v cmd:%v every[sec]:%v", b.LedType, b.LedCmdConfig.Cmd, b.LedCmdConfig.Sec)
 		b.callback = &b.LedCmdConfig
 	case "toggleIfCmd":
-		fmt.Printf("cmd:%v every[sec]:%v init:%v\n", b.LedCmdConfig.Cmd, b.LedCmdConfig.Sec, b.LedToggleConfig.InitOn)
+		globalLog.Infof("type:%v cmd:%v every[sec]:%v init:%v", b.LedType, b.LedCmdConfig.Cmd, b.LedCmdConfig.Sec, b.LedToggleConfig.InitOn)
 		b.callback = &LedToggleIfCmdConfig{
 			b.LedCmdConfig,
 			b.LedToggleConfig,
 		}
 	default:
-		fmt.Printf("default\n")
+		globalLog.Infof("type:%v, default", b.LedType)
 		b.LedToggleConfig = LedToggleConfig{
 			InitOn: false,
 		}
@@ -72,27 +88,37 @@ type LedCmdConfig struct {
 }
 
 func (cc *LedCmdConfig) Run(writeCh chan bus.LedLight, activate chan bool, buttonName uint8, cmd string) {
-	runArgs := strings.Split(cmd, " ")
-	toggleArgs := strings.Split(cc.Cmd, " ")
 	var okCh = make(chan bool, 1)
 	waitingForCmd := true
 	waitTime := time.Tick(time.Duration(cc.Sec) * time.Second)
-	go checkCommand(okCh, toggleArgs[0], toggleArgs[1:])
+	go func() {
+		err := runOsCommand(cc.Cmd)
+		if err != nil {
+			okCh <- false
+		}
+		okCh <- true
+	}()
 	for {
 		if !waitingForCmd {
 			select {
 			case <-waitTime:
-				go checkCommand(okCh, toggleArgs[0], toggleArgs[1:])
+				go func() {
+					err := runOsCommand(cc.Cmd)
+					if err != nil {
+						okCh <- false
+					}
+					okCh <- true
+				}()
 			default:
 			}
 		}
 		select {
 		case <-activate:
-			err := exec.Command(runArgs[0], runArgs[1:]...).Run()
-			e.CheckError(err)
+			err := runOsCommand(cmd)
+			globalLog.CheckError(err)
 		case ok := <-okCh:
 			waitingForCmd = false
-			fmt.Printf("Btn:%v cmd:%v\n", buttonName, ok)
+			globalLog.Debugf("Btn:%v cmd:%v", buttonName, ok)
 			switch {
 			case !ok && cc.state == true:
 				writeCh <- bus.LedLight{buttonName, false}
@@ -101,6 +127,7 @@ func (cc *LedCmdConfig) Run(writeCh chan bus.LedLight, activate chan bool, butto
 				writeCh <- bus.LedLight{buttonName, true}
 				cc.state = true
 			}
+		default:
 		}
 	}
 }
@@ -110,16 +137,14 @@ type LedToggleConfig struct {
 }
 
 func (tg *LedToggleConfig) Run(writeCh chan bus.LedLight, activate chan bool, buttonName uint8, cmd string) {
-	fmt.Printf("Running toggle go of: %v\n", buttonName)
 	state := tg.InitOn
+	globalLog.Infof("Running toggle go of:%v to:%v", buttonName, tg.InitOn)
 	writeCh <- bus.LedLight{buttonName, state}
-	runArgs := strings.Split(cmd, " ")
 	for {
 		state = !state
 		<-activate
-		fmt.Printf("running cmd: %v ", cmd)
-		err := exec.Command(runArgs[0], runArgs[1:]...).Run()
-		e.CheckError(err)
+		err := runOsCommand(cmd)
+		globalLog.CheckError(err)
 		writeCh <- bus.LedLight{buttonName, state}
 	}
 }
@@ -130,32 +155,42 @@ type LedToggleIfCmdConfig struct {
 }
 
 func (tic *LedToggleIfCmdConfig) Run(writeCh chan bus.LedLight, activate chan bool, buttonName uint8, cmd string) {
-	runArgs := strings.Split(cmd, " ")
-	toggleArgs := strings.Split(tic.Cmd, " ")
 	okCh := make(chan bool, 1)
 	prevCmdOk := false
 	waitingForCmd := true
 	waitTime := time.Tick(time.Duration(tic.Sec) * time.Second)
-	go checkCommand(okCh, toggleArgs[0], toggleArgs[1:])
+	go func() {
+		err := runOsCommand(tic.Cmd)
+		if err != nil {
+			okCh <- false
+		}
+		okCh <- true
+	}()
 	for {
 		if !waitingForCmd {
 			select {
 			case <-waitTime:
-				go checkCommand(okCh, toggleArgs[0], toggleArgs[1:])
+				go func() {
+					err := runOsCommand(tic.Cmd)
+					if err != nil {
+						okCh <- false
+					}
+					okCh <- true
+				}()
 			default:
 			}
 		}
 		select {
 		case <-activate:
-			err := exec.Command(runArgs[0], runArgs[1:]...).Run()
-			e.CheckError(err)
+			err := runOsCommand(cmd)
+			globalLog.CheckError(err)
 			if prevCmdOk {
 				writeCh <- bus.LedLight{buttonName, !tic.state}
 				tic.state = !tic.state
 			}
 		case ok := <-okCh:
 			waitingForCmd = false
-			fmt.Printf("Btn:%v cmd:%v\n", buttonName, ok)
+			globalLog.Debugf("Btn:%v cmd:%v", buttonName, ok)
 			switch {
 			case ok && prevCmdOk == false:
 				writeCh <- bus.LedLight{buttonName, tic.InitOn}
@@ -166,15 +201,27 @@ func (tic *LedToggleIfCmdConfig) Run(writeCh chan bus.LedLight, activate chan bo
 				writeCh <- bus.LedLight{buttonName, false}
 				tic.state = false
 			}
+		default:
 		}
 	}
 }
 
-func checkCommand(ok chan bool, name string, args []string) {
-	err := exec.Command(name, args...).Run()
-	if err != nil {
-		ok <- false
-		return
+func runOsCommand(cmd string) error {
+	var name string
+	var args []string
+	switch runtime.GOOS {
+	case "windows":
+		name = "cmd"
+		args = []string{"\\c", cmd}
+	case "linux":
+		name = "/bin/sh"
+		args = []string{"-c", cmd}
+	default:
+		splitCmd := strings.Split(cmd, " ")
+		name = splitCmd[0]
+		args = splitCmd[1:]
 	}
-	ok <- true
+	globalLog.Debugf("running cmd: %v %v", name, args)
+	err := exec.Command(name, args...).Run()
+	return err
 }

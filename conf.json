@@ -12,20 +12,20 @@
             },
             "ledCmd": {
                 "cmd": "C:\\Users\\mrsag\\ledboard\\scripts\\check_zoom.bat",
-                "sec": 1
+                "sec": 5
 
             }
         },
         "2": {
-            "cmd": "cmd /C echo OK",
+            "cmd": "echo OK",
             "type": "cmd",
             "ledCmd": {
-                "cmd": "C:\\Users\\mrsag\\ledboard\\scripts\\check_zoom.bat",
-                "sec": 1
+                "cmd": "if not exist C:\\Users\\mrsag\\git\\ledboard\\scripts\\zoom exit 1",
+                "sec": 5
             }
         },
         "3": {
-            "cmd": "cmd /C",
+            "cmd": "",
             "type": "toggle",
             "toggle": {
                 "init": true
@@ -38,8 +38,8 @@
                 "init": true
             },
             "ledCmd": {
-                "cmd": "C:\\Users\\mrsag\\ledboard\\scripts\\check_zoom.bat",
-                "sec": 1
+                "cmd": "if not exist C:\\Users\\mrsag\\git\\ledboard\\scripts\\zoom exit 1",
+                "sec": 5
             }
         },
         "5": {
@@ -49,27 +49,27 @@
                 "init": true
             },
             "ledCmd": {
-                "cmd": "C:\\Users\\mrsag\\ledboard\\scripts\\check_zoom.bat",
-                "sec": 1
+                "cmd": "if not exist C:\\Users\\mrsag\\git\\ledboard\\scripts\\zoom exit 1",
+                "sec": 5
 
             }
         },
         "6": {
-            "cmd": "cmd /C",
+            "cmd": "",
             "type": "toggle",
             "toggle": {
                 "init": true
             }
         },
         "7": {
-            "cmd": "cmd /C",
+            "cmd": "",
             "type": "toggle",
             "toggle": {
                 "init": true
             }
         },
         "8": {
-            "cmd": "cmd /C",
+            "cmd": "",
             "type": "toggle",
             "toggle": {
                 "init": false

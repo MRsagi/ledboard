@@ -1,9 +1,6 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"time"
 
 	"github.com/ledboard/pkg/bus"
@@ -14,45 +11,41 @@ import (
 const defaultConfig = "conf.json"
 
 func main() {
-	conf := newConfig(defaultConfig)
-	bus := bus.NewSerialBus(conf.LedBoard.Port, conf.LedBoard.Baud)
+	conf := types.NewConfig(defaultConfig)
+	bus := bus.NewSerialBus(conf.LedBoard.Port, conf.LedBoard.Baud, conf.Log)
 	bus.Connect()
+	defer bus.Disconnect()
 	run(conf, bus)
-}
-
-func newConfig(filename string) types.UserConfig {
-	file, err := ioutil.ReadFile(filename)
-	e.CheckPanic(err)
-	var conf types.UserConfig
-	err = json.Unmarshal(file, &conf)
-	e.CheckPanic(err)
-	fmt.Printf("%v\n", conf)
-	return conf
 }
 
 func run(conf types.UserConfig, serialBus bus.SerialBus) {
 	var activeChans = make(map[uint8]chan bool)
-
 	//setup
+	stopCh := e.SetupCloseHandler()
 	for i, button := range conf.Buttons {
-		fmt.Printf("Init button:%v ", i)
+		conf.Log.Debugf("Init button:%v", i)
 		button.InitCallback()
 		activeChans[i] = make(chan bool, 1)
 		go button.Run(serialBus.GetWriteChannel(), activeChans[i], i, button.Cmd)
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	//loop
 	var btn uint8
 	readCh := serialBus.GetReadChannel()
 	for {
-		btn = <-readCh
-		fmt.Printf("Pushed:%v\n", btn)
-		ch, ok := activeChans[uint8(btn)]
-		if !ok {
-			fmt.Printf("Error activating %v\n", btn)
-			continue
+		select {
+		case btn = <-readCh:
+			conf.Log.Debugf("Pushed:%v", btn)
+			ch, ok := activeChans[uint8(btn)]
+			if !ok {
+				conf.Log.Debugf("Error activating %v", btn)
+				continue
+			}
+			ch <- true
+		case <-stopCh:
+			conf.Log.Infof("\r- Ctrl+C pressed in Terminal")
+			return
 		}
-		ch <- true
 	}
 }
