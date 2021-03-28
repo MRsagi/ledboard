@@ -26,10 +26,12 @@ type LedLight struct {
 }
 
 func (s *SerialBus) runRead() uint8 {
+	buf := make([]byte, 1)
 	for {
-		buf := make([]byte, 1)
 		s.bus.Read(buf)
-		s.readCh <- buf[0]
+		for _, b := range buf {
+			s.readCh <- b
+		}
 	}
 }
 

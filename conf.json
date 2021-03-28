@@ -5,74 +5,85 @@
     },
     "buttons": {
         "1": {
-            "cmd": "cscript //nologo C:\\Users\\mrsag\\ledboard\\scripts\\toggle_zoom_audio.js",
-            "type": "toggleIfCmd",
-            "toggle":{
-                "init": true
-            },
-            "ledCmd": {
-                "cmd": "C:\\Users\\mrsag\\ledboard\\scripts\\check_zoom.bat",
-                "sec": 5
-
+            "cmd": "cscript //nologo C:\\Users\\mrsag\\git\\ledboard\\scripts\\toggle_zoom_audio.js"
+        },
+        "2": {
+            "cmd": "echo 2"
+        },
+        "3": {
+            "cmd": "echo 3"
+        },
+        "4": {
+            "cmd": "cscript //nologo C:\\Users\\mrsag\\git\\ledboard\\scripts\\exit_zoom.js"
+        },
+        "5": {
+            "cmd": "cscript //nologo C:\\Users\\mrsag\\git\\ledboard\\scripts\\toggle_zoom_video.js"
+        },
+        "6": {
+            "cmd": "echo 6"
+        },
+        "7": {
+            "cmd": "echo 7"
+        },
+        "8": {
+            "cmd": "echo 8"
+        }
+    },
+    "leds": {
+        "1": {
+            "type": "toggle",
+            "toggle": {
+                "init": true,
+                "button": 1
             }
         },
         "2": {
-            "cmd": "echo OK",
-            "type": "cmd",
-            "ledCmd": {
-                "cmd": "if not exist C:\\Users\\mrsag\\git\\ledboard\\scripts\\zoom exit 1",
-                "sec": 5
+            "type" : "toggle",
+            "toggle": {
+                "init": false,
+                "button": 2
             }
         },
         "3": {
-            "cmd": "",
-            "type": "toggle",
-            "toggle": {
-                "init": true
+            "type": "cmd",
+            "ledCmd": {
+                "cmd": "C:\\Users\\mrsag\\git\\ledboard\\scripts\\check_zoom.bat",
+                "sec": 5
             }
         },
         "4": {
-            "cmd": "cscript //nologo C:\\Users\\mrsag\\ledboard\\scripts\\exit_zoom.js",
-            "type": "toggleIfCmd",
-            "toggle":{
-                "init": true
-            },
-            "ledCmd": {
-                "cmd": "if not exist C:\\Users\\mrsag\\git\\ledboard\\scripts\\zoom exit 1",
-                "sec": 5
+            "type" : "toggle",
+            "toggle": {
+                "init": true,
+                "button": 4
             }
         },
         "5": {
-            "cmd": "cscript //nologo C:\\Users\\mrsag\\ledboard\\scripts\\toggle_zoom_video.js",
-            "type": "toggleIfCmd",
-            "toggle":{
-                "init": true
-            },
-            "ledCmd": {
-                "cmd": "if not exist C:\\Users\\mrsag\\git\\ledboard\\scripts\\zoom exit 1",
-                "sec": 5
-
+            "type" : "toggle",
+            "toggle": {
+                "init": true,
+                "button": 5
             }
         },
         "6": {
-            "cmd": "",
-            "type": "toggle",
+            "type" : "toggle",
             "toggle": {
-                "init": true
+                "init": false,
+                "button": 6
             }
         },
         "7": {
-            "cmd": "",
-            "type": "toggle",
+            "type" : "toggle",
             "toggle": {
-                "init": true
+                "init": false,
+                "button": 7
             }
         },
         "8": {
-            "cmd": "",
-            "type": "toggle",
+            "type" : "toggle",
             "toggle": {
-                "init": false
+                "init": false,
+                "button": 8
             }
         }
     }

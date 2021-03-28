@@ -1,34 +1,25 @@
 package main
 
 import (
-	"time"
-
 	"github.com/ledboard/pkg/bus"
+	c "github.com/ledboard/pkg/controllers"
 	e "github.com/ledboard/pkg/errors"
-	"github.com/ledboard/pkg/types"
 )
 
 const defaultConfig = "conf.json"
 
 func main() {
-	conf := types.NewConfig(defaultConfig)
+	conf := c.NewConfig(defaultConfig)
 	bus := bus.NewSerialBus(conf.LedBoard.Port, conf.LedBoard.Baud, conf.Log)
 	bus.Connect()
 	defer bus.Disconnect()
 	run(conf, bus)
 }
 
-func run(conf types.UserConfig, serialBus bus.SerialBus) {
-	var activeChans = make(map[uint8]chan bool)
+func run(conf c.UserConfig, serialBus bus.SerialBus) {
 	//setup
 	stopCh := e.SetupCloseHandler()
-	for i, button := range conf.Buttons {
-		conf.Log.Debugf("Init button:%v", i)
-		button.InitCallback()
-		activeChans[i] = make(chan bool, 1)
-		go button.Run(serialBus.GetWriteChannel(), activeChans[i], i, button.Cmd)
-		time.Sleep(100 * time.Millisecond)
-	}
+	activeChans := conf.MakeControllers(serialBus)
 
 	//loop
 	var btn uint8
