@@ -103,13 +103,13 @@ conf.json fields:
       "<.ino led array index +1>": {
         "type" : "<activate rule type: toggle/cmd[/none]>",
         "toggle": {
-          "button": <button_number>
-          "init": <true/false>
+          "button": "<button number>",
+          "init": "<true/false>"
         },
         "ledCmd": {
           "cmd": "<command>",
-          "sec": <interval in seconds [default: 5]>
-          "blink": <set true to blink and not just on [default: false]>
+          "sec": "<interval in seconds [default: 5]>",
+          "blink": "<set true to blink and not just on [default: false]>"
         }
       },
       "3": {
