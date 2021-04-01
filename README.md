@@ -88,37 +88,30 @@ go build .
 ## Configurations
 
 conf.json fields:
+*after each <instruction> there are examples
 ```conf.json
 {
     "ledBoard": {
         "port": "<your PC port usually COM* in windows and /dev/ttyUSB* or /dev/ttyACM*>",
-        "baud": 115200 //this is the same as in .ino no need to change.
+        "baud": 115200
     },
     "buttons": {
         "<.ino button array index +1>": {"cmd": "<command>"},
-        //this will be execute using exec.Command.
-        //On windows most of the commands should work, you might want to add "cmd \c" im the beginning
-        //    but I recommend using .bat files.
-        // linux will add "/bin/sh -c" for you.
-        //example:
         "2": {"cmd": "cscript //nologo C:\\Users\\mrsag\\git\\ledboard\\scripts\\toggle_zoom_audio.js"},
     },
     "leds": {
       "<.ino led array index +1>": {
         "type" : "<activate rule type: toggle/cmd[/none]>",
-        //if selected type: toggle
         "toggle": {
           "button": <button_number>
           "init": <true/false>
         },
-        //if selected type: cmd
         "ledCmd": {
           "cmd": "<command>",
-          "sec": <interval in seconds [default 5]>
-          "blink": <set true to blink and not just on [default false]>
+          "sec": <interval in seconds [default: 5]>
+          "blink": <set true to blink and not just on [default: false]>
         }
       },
-      //examples:
       "3": {
           "type" : "toggle",
           "toggle": {
