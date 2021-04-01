@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+
 	"github.com/ledboard/pkg/bus"
 	c "github.com/ledboard/pkg/controllers"
 	e "github.com/ledboard/pkg/errors"
@@ -9,7 +11,11 @@ import (
 const defaultConfig = "conf.json"
 
 func main() {
-	conf := c.NewConfig(defaultConfig)
+	debugFlag := flag.Bool("debug", false, "debug logging")
+	confFile := flag.String("conf", defaultConfig, "override default config file")
+	flag.Parse()
+
+	conf := c.NewConfig(*confFile, *debugFlag)
 	bus := bus.NewSerialBus(conf.LedBoard.Port, conf.LedBoard.Baud, conf.Log)
 	bus.Connect()
 	defer bus.Disconnect()
@@ -35,7 +41,7 @@ func run(conf c.UserConfig, serialBus bus.SerialBus) {
 			}
 			ch <- true
 		case <-stopCh:
-			conf.Log.Infof("\r- Ctrl+C pressed in Terminal")
+			conf.Log.Infof("\r- Sutting down")
 			return
 		}
 	}

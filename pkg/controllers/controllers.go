@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -43,19 +44,50 @@ func (c *UserConfig) MakeControllers(serialBus bus.SerialBus) map[uint8]chan boo
 	return activeChans
 }
 
+func (c *UserConfig) validate() {
+	if c.LedBoard.Port == "" {
+		globalLog.Fatal("No port defined in config")
+		os.Exit(1)
+	}
+	if c.LedBoard.Baud == 0 {
+		globalLog.Fatal("No baud defined in config")
+		os.Exit(1)
+	}
+	for ledName, led := range c.Leds {
+		switch led.LedType {
+		case LedToggleType:
+			if led.ToggleConfig.ButtonNum == 0 {
+				led.ToggleConfig.ButtonNum = ledName
+			}
+		case LedCmdType:
+			if led.CmdConfig.Cmd == "" {
+				globalLog.Fatalf("you defined cmd type to led %v but no cmd specified", ledName)
+				os.Exit(1)
+			}
+			if led.CmdConfig.Sec == 0 {
+				globalLog.Warnf("it is recommended to set sec to led type cmd. auto using 5 sec on led#%v", ledName)
+				led.CmdConfig.Sec = 5
+				c.Leds[ledName] = led
+			}
+		}
+	}
+
+}
+
 type LedBoardConfig struct {
 	Port   string `json:"port"`
 	Baud   uint   `json:"baud"`
 	serial bus.SerialBus
 }
 
-func NewConfig(filename string) UserConfig {
-	globalLog = e.NewLogger()
+func NewConfig(filename string, setDebug bool) UserConfig {
+	globalLog = e.NewLogger(setDebug)
 	file, err := ioutil.ReadFile(filename)
 	globalLog.CheckPanic(err)
 	var conf UserConfig
 	err = json.Unmarshal(file, &conf)
 	globalLog.CheckPanic(err)
+	conf.validate()
 	conf.Log = globalLog
 	conf.Log.Debugf("%v", conf.LedBoard)
 	conf.Log.Debugf("%v", conf.Leds)

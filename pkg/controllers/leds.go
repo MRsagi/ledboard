@@ -6,23 +6,32 @@ import (
 	"github.com/ledboard/pkg/bus"
 )
 
+type LedActiveType string
+
+const (
+	LedToggleType LedActiveType = "toggle"
+	LedCmdType    LedActiveType = "cmd"
+	LedNoneType   LedActiveType = "none"
+)
+
 type LedConfig struct {
-	LedType         string          `json:"type"`
-	LedToggleConfig LedToggleConfig `json:"toggle"`
-	LedCmdConfig    LedCmdConfig    `json:"ledCmd"`
+	LedType      LedActiveType   `json:"type"`
+	ToggleConfig LedToggleConfig `json:"toggle"`
+	CmdConfig    LedCmdConfig    `json:"ledCmd"`
 }
 
 //inits led goroutine and returns the button number if such should be matched
 func (c *LedConfig) init(writeCh chan bus.LedLight, ledNum uint8) (uint8, chan bool) {
 	switch c.LedType {
 	case "toggle":
-		globalLog.Infof("type:%v init:%v", c.LedType, c.LedToggleConfig.InitOn)
+		globalLog.Infof("led:%v type:%v init:%v", ledNum, c.LedType, c.ToggleConfig.InitOn)
 		ledToggleCh := make(chan bool, 1)
-		go c.LedToggleConfig.run(writeCh, ledToggleCh, ledNum)
-		return c.LedToggleConfig.ButtonNum, ledToggleCh
+		go c.ToggleConfig.run(writeCh, ledToggleCh, ledNum)
+		return c.ToggleConfig.ButtonNum, ledToggleCh
 	case "cmd":
-		globalLog.Infof("type:%v cmd:%v every[sec]:%v", c.LedType, c.LedCmdConfig.Cmd, c.LedCmdConfig.Sec)
-		go run(writeCh, c.LedCmdConfig.Cmd, c.LedCmdConfig.Sec, ledNum)
+		globalLog.Infof("led:%v type:%v cmd:%v every[sec]:%v", ledNum, c.LedType, c.CmdConfig.Cmd, c.CmdConfig.Sec)
+		//I don't know why but running this func as method causes errors
+		go runCmd(writeCh, c.CmdConfig.Cmd, c.CmdConfig.Sec, c.CmdConfig.Blink, ledNum)
 		return 0, nil
 	}
 	return 0, nil
@@ -34,11 +43,11 @@ type LedToggleConfig struct {
 }
 
 func (c *LedToggleConfig) run(writeCh chan bus.LedLight, ledToggleCh chan bool, ledNum uint8) {
-	writeCh <- bus.LedLight{ledNum, c.InitOn}
+	writeCh <- bus.LedLight{ledNum, c.InitOn, false}
 	state := c.InitOn
 	for {
 		<-ledToggleCh
-		writeCh <- bus.LedLight{ledNum, !state}
+		writeCh <- bus.LedLight{ledNum, !state, false}
 		state = !state
 	}
 }
@@ -46,11 +55,13 @@ func (c *LedToggleConfig) run(writeCh chan bus.LedLight, ledToggleCh chan bool, 
 type LedCmdConfig struct {
 	Sec   int    `json:"sec"`
 	Cmd   string `json:"cmd"`
+	Blink bool   `json:"blink"`
 	state bool
 }
 
-func run(writeCh chan bus.LedLight, cmd string, sec int, ledName uint8) {
+func runCmd(writeCh chan bus.LedLight, cmd string, sec int, blink bool, ledName uint8) {
 	var cmdOk bool
+	state := false
 	waitTime := time.Tick(time.Duration(sec) * time.Second)
 	for {
 		<-waitTime
@@ -60,7 +71,10 @@ func run(writeCh chan bus.LedLight, cmd string, sec int, ledName uint8) {
 		} else {
 			cmdOk = true
 		}
-		writeCh <- bus.LedLight{ledName, cmdOk}
+		if cmdOk != state {
+			writeCh <- bus.LedLight{ledName, cmdOk, blink}
+			state = cmdOk
+		}
 		globalLog.Debugf("LED:%v cmd:%v", ledName, cmdOk)
 	}
 }

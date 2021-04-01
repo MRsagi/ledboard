@@ -8,10 +8,10 @@
             "cmd": "cscript //nologo C:\\Users\\mrsag\\git\\ledboard\\scripts\\toggle_zoom_audio.js"
         },
         "2": {
-            "cmd": "echo 2"
+            "cmd": "cmd \\c echo 2"
         },
         "3": {
-            "cmd": "echo 3"
+            "cmd": "cmd \\c echo 3"
         },
         "4": {
             "cmd": "cscript //nologo C:\\Users\\mrsag\\git\\ledboard\\scripts\\exit_zoom.js"
@@ -20,13 +20,13 @@
             "cmd": "cscript //nologo C:\\Users\\mrsag\\git\\ledboard\\scripts\\toggle_zoom_video.js"
         },
         "6": {
-            "cmd": "echo 6"
+            "cmd": "cmd \\c echo 6"
         },
         "7": {
-            "cmd": "echo 7"
+            "cmd": "cmd \\c echo 7"
         },
         "8": {
-            "cmd": "echo 8"
+            "cmd": "cmd \\c echo 8"
         }
     },
     "leds": {
@@ -45,17 +45,18 @@
             }
         },
         "3": {
-            "type": "cmd",
-            "ledCmd": {
-                "cmd": "C:\\Users\\mrsag\\git\\ledboard\\scripts\\check_zoom.bat",
-                "sec": 5
+            "type" : "toggle",
+            "toggle": {
+                "init": false,
+                "button": 4
             }
         },
         "4": {
-            "type" : "toggle",
-            "toggle": {
-                "init": true,
-                "button": 4
+            "type": "cmd",
+            "ledCmd": {
+                "cmd": "C:\\Users\\mrsag\\git\\ledboard\\scripts\\check_zoom.bat",
+                "sec": 5,
+                "blink": true
             }
         },
         "5": {

@@ -23,6 +23,7 @@ type SerialBus struct {
 type LedLight struct {
 	Num   uint8
 	State bool
+	Blink bool
 }
 
 func (s *SerialBus) runRead() uint8 {
@@ -41,6 +42,8 @@ func (s *SerialBus) runWrite() {
 	for {
 		newLedState = <-s.writeCh
 		switch {
+		case newLedState.State && newLedState.Blink:
+			state = []byte("B")
 		case newLedState.State:
 			state = []byte("H")
 		default:

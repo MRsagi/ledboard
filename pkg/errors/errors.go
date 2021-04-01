@@ -9,6 +9,7 @@ import (
 )
 
 type Logger struct {
+	debugMode   bool
 	debugLogger *log.Logger
 	infoLogger  *log.Logger
 	warnLogger  *log.Logger
@@ -16,8 +17,9 @@ type Logger struct {
 	fatalLogger *log.Logger
 }
 
-func NewLogger() *Logger {
+func NewLogger(setDebug bool) *Logger {
 	return &Logger{
+		debugMode:   setDebug,
 		debugLogger: log.New(os.Stderr, "DEBUG: ", log.Ldate|log.Ltime),
 		infoLogger:  log.New(os.Stderr, "INFO: ", log.Ldate|log.Ltime),
 		warnLogger:  log.New(os.Stderr, "WARN: ", log.Ldate|log.Ltime),
@@ -28,11 +30,13 @@ func NewLogger() *Logger {
 }
 
 func (l *Logger) Debug(msg string) {
-	l.debugLogger.Println(msg)
+	if l.debugMode {
+		l.debugLogger.Println(msg)
+	}
 }
 
 func (l *Logger) Debugf(format string, args ...interface{}) {
-	l.debugLogger.Println(fmt.Sprintf(format, args...))
+	l.Debug(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) Info(msg string) {
@@ -40,7 +44,7 @@ func (l *Logger) Info(msg string) {
 }
 
 func (l *Logger) Infof(format string, args ...interface{}) {
-	l.infoLogger.Println(fmt.Sprintf(format, args...))
+	l.Info(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) Warn(msg string) {
@@ -48,7 +52,7 @@ func (l *Logger) Warn(msg string) {
 }
 
 func (l *Logger) Warnf(format string, args ...interface{}) {
-	l.warnLogger.Println(fmt.Sprintf(format, args...))
+	l.Warn(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) Error(msg string) {
@@ -56,7 +60,7 @@ func (l *Logger) Error(msg string) {
 }
 
 func (l *Logger) Errorf(format string, args ...interface{}) {
-	l.errorLogger.Println(fmt.Sprintf(format, args...))
+	l.Error(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) Fatal(msg string) {
@@ -64,7 +68,7 @@ func (l *Logger) Fatal(msg string) {
 }
 
 func (l *Logger) Fatalf(format string, args ...interface{}) {
-	l.fatalLogger.Println(fmt.Sprintf(format, args...))
+	l.Fatal(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) CheckPanic(err error) {
