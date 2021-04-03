@@ -18,7 +18,7 @@
 <br />
 <p align="center">
   <a href="https://github.com/MRsagi/ledboard">
-    <img src="demo.gif" alt="Logo" width="80" height="80">
+    <img src="demo.gif" alt="gif">
   </a>
 </p>
 
