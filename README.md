@@ -14,6 +14,15 @@
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
 
+<!-- PROJECT LOGO -->
+<br />
+<p align="center">
+  <a href="https://github.com/MRsagi/ledboard">
+    <img src="demo.gif" alt="Logo" width="80" height="80">
+  </a>
+</p>
+
+
 <!-- TABLE OF CONTENTS -->
 <details open="open">
   <summary>Table of Contents</summary>
